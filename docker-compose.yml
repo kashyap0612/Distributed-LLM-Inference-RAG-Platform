@@ -1,0 +1,45 @@
+services:
+  backend:
+    build: ./backend
+    env_file: ./backend/.env.example
+    ports: ["8000:8000"]
+    depends_on: [redis, qdrant, postgres]
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports: ["3000:3000"]
+    depends_on: [backend]
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+  qdrant:
+    image: qdrant/qdrant:v1.12.5
+    ports: ["6333:6333"]
+    volumes: [qdrant:/qdrant/storage]
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rag
+    ports: ["5432:5432"]
+    volumes: [pg:/var/lib/postgresql/data]
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes: ["./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+    ports: ["9090:9090"]
+    depends_on: [backend]
+  grafana:
+    image: grafana/grafana:11.4.0
+    environment: { GF_SECURITY_ADMIN_PASSWORD: admin }
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+    ports: ["3001:3000"]
+    depends_on: [prometheus]
+  nginx:
+    image: nginx:1.27-alpine
+    volumes: ["./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro"]
+    ports: ["8080:80"]
+    depends_on: [frontend, backend]
+volumes: { qdrant: {}, pg: {} }

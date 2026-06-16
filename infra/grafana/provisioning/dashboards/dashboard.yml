@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: ML Systems
+    orgId: 1
+    folder: ML Systems
+    type: file
+    options: { path: /etc/grafana/provisioning/dashboards }
